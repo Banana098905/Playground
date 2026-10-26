@@ -1,0 +1,14 @@
+{
+  "name": "PLAYGROUND ZERO",
+  "short_name": "PG/0",
+  "description": "作る。壊す。発見する。また作る。ブラウザで遊べるデジタル創作基地。",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#15171b",
+  "theme_color": "#15171b",
+  "lang": "ja",
+  "icons": [
+    { "src": "assets/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>PLAYGROUND ZERO | 作る。壊す。発見する。また作る。</title>
+  <meta name="description" content="PLAYGROUND ZERO は、ブラウザだけで創作と実験を楽しめるデジタル創作基地。図形とテキストで作品を作り、流れ・配色・模様・動きの実験室で遊び、毎日のお題に挑戦。作品はあなたのブラウザに保存されます。">
+  <meta name="theme-color" content="#15171b">
+  <meta name="color-scheme" content="dark">
+
+  <!-- 公開後は og:image / og:url を絶対URLに差し替えてください（docs/DEPLOY.md 参照） -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="PLAYGROUND ZERO">
+  <meta property="og:description" content="作る。壊す。発見する。また作る。— ブラウザで遊べるデジタル創作基地">
+  <meta property="og:image" content="assets/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/logo.svg">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="css/style.css?v=2.0.0">
+</head>
+<body>
+  <a class="skip-link" href="#main">本文へスキップ</a>
+
+  <header class="site-header" id="site-header"></header>
+  <main id="main" class="view" tabindex="-1">
+    <div class="loading" role="status" aria-label="読み込み中"></div>
+  </main>
+  <footer class="site-footer" id="site-footer"></footer>
+
+  <noscript>
+    <p style="padding:32px;text-align:center">PLAYGROUND ZERO を使うには JavaScript を有効にしてください。</p>
+  </noscript>
+
+  <!-- 依存ライブラリなし。読み込み順に意味があります（docs/ARCHITECTURE.md 参照） -->
+  <script src="js/config.js?v=2.0.0"></script>
+  <script src="js/util.js?v=2.0.0"></script>
+  <script src="js/ui.js?v=2.0.0"></script>
+  <script src="js/model.js?v=2.0.0"></script>
+  <script src="js/render.js?v=2.0.0"></script>
+  <script src="js/storage/idb.js?v=2.0.0"></script>
+  <script src="js/storage/fallback.js?v=2.0.0"></script>
+  <script src="js/storage/index.js?v=2.0.0"></script>
+  <script src="js/projects.js?v=2.0.0"></script>
+  <script src="js/userdata.js?v=2.0.0"></script>
+  <script src="js/registry.js?v=2.0.0"></script>
+  <script src="js/labs-core.js?v=2.0.0"></script>
+  <script src="js/daily.js?v=2.0.0"></script>
+  <script src="js/router.js?v=2.0.0"></script>
+  <script src="js/pages/home.js?v=2.0.0"></script>
+  <script src="js/pages/studio.js?v=2.0.0"></script>
+  <script src="js/pages/lab.js?v=2.0.0"></script>
+  <script src="js/pages/workkit.js?v=2.0.0"></script>
+  <script src="js/pages/library.js?v=2.0.0"></script>
+  <script src="js/pages/lab-particles.js?v=2.0.0"></script>
+  <script src="js/pages/lab-shapes.js?v=2.0.0"></script>
+  <script src="js/pages/lab-flow.js?v=2.0.0"></script>
+  <script src="js/pages/lab-color.js?v=2.0.0"></script>
+  <script src="js/pages/lab-pattern.js?v=2.0.0"></script>
+  <script src="js/pages/lab-motion.js?v=2.0.0"></script>
+  <script src="js/pages/daily.js?v=2.0.0"></script>
+  <script src="js/pages/discover.js?v=2.0.0"></script>
+  <script src="js/pages/myspace.js?v=2.0.0"></script>
+  <script src="js/main.js?v=2.0.0"></script>
+</body>
+</html>
