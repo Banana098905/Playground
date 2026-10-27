@@ -1,11 +1,11 @@
 {
   "name": "playground-zero",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "private": true,
   "description": "PLAYGROUND ZERO — ブラウザで遊べるデジタル創作基地（依存ライブラリなし・静的サイト）",
   "scripts": {
     "start": "node scripts/serve.js",
-    "test": "node scripts/test-logic.js && node scripts/check-links.js",
+    "test": "node scripts/test-logic.js && node scripts/test-creation.js && node scripts/check-links.js",
     "build": "node scripts/build.js"
   },
   "engines": { "node": ">=18" }
