@@ -78,3 +78,18 @@ Object  { id, type: rect|ellipse|triangle|star|text, x, y, w, h, rotation, fill|
 - **Daily**: 日付キー `YYYY-MM-DD`（端末の現地時間）→ 通算日数 → 30日周期。周期ごとにシード付きシャッフルで並べ替え、周期内は重複なし、周期の境目で同じお題が連続しない。
 - **パフォーマンス**: 携帯端末では粒子数に上限（Flow 1200 / Motion 90）。フレーム間隔が長い状態が続くと自動で数を減らす（`Kit.perfGuard`）。固定ステップで更新するため端末の速さで挙動が変わらない。
 - 保存データの形式は [`DATA-FORMAT.md`](DATA-FORMAT.md)。
+
+
+## Phase 3 の追加構成（Creation Engine）
+
+- `js/creation/spec.js`（ブロック定義の許可リスト）→ `program.js`（検証）→ `runtime.js`（インタープリター）→ `samples.js` → `io.js`（ファイル）。**DOMに依存せず**、Node の vm でテストできる。UIは `js/pages/create*.js`。
+- 新しい種類の作品として `kind:'creation'` を `model.js` に追加。保存・バックアップ・My Space は既存の仕組みをそのまま使う。
+- 仕組みと拡張方法は [`CREATION-ENGINE.md`](CREATION-ENGINE.md)。
+
+## Phase 4 の追加構成（Remix Engine）
+
+- `js/remix/`（UI非依存）: `core`（差分・系統）→ `parts`・`builtins`（部品）→ `store`（履歴・下書き・部品・作品操作）→ `io`（書き出し・読み込み・バックアップ拡張）。読み込み順は `index.html` のとおり。
+- 保存は既存の `PZ.userdata`（`meta` ストア）と `PZ.projects` だけを使い、IndexedDB のバージョンは変えていません。
+- `model.sanitizeProject` は `kind:'creation'` の `remix` だけを検証して保持（schema は 2 のまま）。
+- 画面は `pages/remix*.js`。ブロックのエディターは Create と共用（`PZ.creationWs`）。
+- テスト: `scripts/test-remix.js`（Node の `vm` 上で、メモリ保存層を使って実行）。画面の動作は Playwright で手動確認。詳細は `docs/REMIX-ENGINE.md`。

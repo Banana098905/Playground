@@ -34,12 +34,30 @@ DB のバージョンは Phase 1 から変えていません。Phase 1 の作品
 - 読み込み時はすべて検証・丸め込み（`model.sanitizeProject`）されます。`__proto__` などの危険なキー、範囲外の数値、長すぎる文字列は取り除かれます。
 - `params` は 20KB まで、サムネイルは 90KB までです。
 
-## バックアップファイル（format 2）
+## 自作ツール（kind:'creation'）
+作品レコードに `creation` が入ります（他の kind では `null`）。
+```jsonc
+"creation": {
+  "v": 1,                       // ブロック形式のバージョン
+  "description": "…", "origin": "sample:click-color" | "",
+  "canvas": { "w": 800, "h": 500, "bg": "#101215" },
+  "vars": [ { "name": "score", "value": 0, "tune": { "min": 0, "max": 10, "step": 1 } } ],
+  "scripts": [ { "id": "b1", "type": "onStart", "body": [ { "id": "b2", "type": "fill", "in": { "color": "#b8ff3d" } } ] } ]
+}
+```
+- 値の入力は数・文字・色・真偽の**リテラル**か、値ブロック（`{type, in}`）。コードは入りません。
+- 保存・読み込み時は `Cr.validate` / `sanitize` で検証され、未知のブロックは `unknown` として目印だけ残ります。上限は `Cr.LIMITS`（400ブロック・30スクリプト・深さ8・300KBなど）。
+- 名前・説明・ブロック・初期値（vars）・作成／更新日時・形式バージョン（`v`, `schema`）・元の作品ID（`parentId`）を保持します。
+
+### 自作ツールファイル（`.pzcreate.json`）
+`{ app:"playground-zero", type:"creation-tool", format:1, appVersion, exportedAt, tool:{ name, description, tags, createdAt, updatedAt, creation } }`。
+
+## バックアップファイル（format 3。format 1・2 も読めます）
 ```jsonc
 {
   "app": "playground-zero",
-  "format": 2,
-  "appVersion": "2.0.0",
+  "format": 3,
+  "appVersion": "4.0.0",
   "exportedAt": "2026-10-26T…Z",
   "projects": [ /* 作品レコード */ ],
   "collections": [ { "id": "…", "name": "…" } ],
@@ -53,6 +71,12 @@ DB のバージョンは Phase 1 から変えていません。Phase 1 の作品
   - 同じID・同じ更新時刻: スキップ
   - 同じID・内容が違う: **別IDの別作品として追加**（名前に「（取り込み）」）。既存は上書きしない
 - 上限: 1ファイル 50MB、1000作品まで。超えた分は無視して警告します。
+
+### Phase 4 の追加（format 3 のまま・すべて任意）
+- 作品レコードに `remix`（`kind:'creation'` のみ）: `{ v:1, origin, lineage, summary, parts }`。無ければ従来どおり。詳細は `docs/REMIX-ENGINE.md`。
+- バックアップのルートに `remix: { v:1, components:[…], histories:{ 作品ID:{ versions:[…] } } }`。古いアプリは無視します。
+- `meta` ストアのキー: `rxh:<作品ID>`（履歴）／`rxh-index`／`rxc`（部品）／`rxd:<キー>`／`rxd-index`（下書き）。
+- Remix パッケージ `.pzremix.json`（`type:'remix-package'`, `format:1`）。
 
 ## 作品単体の書き出し
 My Space のプレビューから、作品1件を同じ形式（`projects` が1件のバックアップ）で書き出せます。別環境の「読み込み」でそのまま復元できます。

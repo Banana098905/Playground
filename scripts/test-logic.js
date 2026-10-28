@@ -88,7 +88,7 @@ const PZ = sandbox.PZ; let n = 0; const ok = (name, fn) => Promise.resolve().the
     const st = await PZ.projects.create('S'); await PZ.projects.save(st);
     const ex = await PZ.projects.createExperiment('flow', { name: 'F', params: { seed: 9 } });
     await PZ.userdata.markDaily('2026-10-01', 'wave', 'memo'); await PZ.userdata.toggleFavTool('flow');
-    const data = await PZ.projects.exportAll(); assert.strictEqual(data.format, 2); assert.strictEqual(data.projects.length, 2); assert.ok(data.daily['2026-10-01']);
+    const data = await PZ.projects.exportAll(); assert.strictEqual(data.format, 3); assert.strictEqual(data.projects.length, 2); assert.ok(data.daily['2026-10-01']);
     // 同内容 → すべてスキップ
     let rep = await PZ.projects.inspectBackup(JSON.parse(JSON.stringify(data)));
     assert.strictEqual(rep.items.filter(i => i.status === 'same').length, 2);

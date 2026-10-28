@@ -213,6 +213,11 @@
    */
   WK.drawThumb = function (host, work, pad) {
     U.clear(host);
+    if (work.kind === 'creation') {
+      if (work.thumb) host.appendChild(h('img', { class: 'work-img', src: work.thumb, alt: '', loading: 'lazy', decoding: 'async' }));
+      else host.appendChild(h('div', { class: 'work-noimg' }, UI.icon('blocks', 40)));
+      return;
+    }
     if (work.kind === 'experiment') {
       if (work.thumb) {
         host.appendChild(h('img', { class: 'work-img', src: work.thumb, alt: '', loading: 'lazy', decoding: 'async' }));
@@ -232,6 +237,7 @@
 
   /** 作品の種類ラベル（カードのバッジ用） */
   WK.kindLabel = function (work) {
+    if (work.kind === 'creation') return 'CREATE';
     if (work.kind !== 'experiment') return 'STUDIO';
     var t = PZ.registry.get(work.tool);
     return t ? t.name.toUpperCase() : 'LAB';

@@ -21,7 +21,7 @@
     { id: 'name', label: '名前順（あ→Z）', fn: function (a, b) { return a.name.localeCompare(b.name, 'ja'); } },
     { id: 'name-desc', label: '名前順（Z→あ）', fn: function (a, b) { return b.name.localeCompare(a.name, 'ja'); } }
   ];
-  var KINDS = [{ id: '', label: 'すべて' }, { id: 'studio', label: 'Studio' }, { id: 'experiment', label: '実験' }];
+  var KINDS = [{ id: '', label: 'すべて' }, { id: 'studio', label: 'Studio' }, { id: 'experiment', label: '実験' }, { id: 'creation', label: 'Create' }];
   var PAGE = 60;
 
   PZ.pages.space = {
@@ -96,9 +96,11 @@
         U.clear(statHost);
         var hl = PZ.projects.health();
         var exp = all.filter(function (p) { return p.kind === 'experiment'; }).length;
+        var cre = all.filter(function (p) { return p.kind === 'creation'; }).length;
         statHost.appendChild(h('span', null, 'WORKS ', h('b', null, String(all.length))));
-        statHost.appendChild(h('span', null, 'STUDIO ', h('b', null, String(all.length - exp))));
+        statHost.appendChild(h('span', null, 'STUDIO ', h('b', null, String(all.length - exp - cre))));
         statHost.appendChild(h('span', null, 'EXPERIMENTS ', h('b', null, String(exp))));
+        statHost.appendChild(h('span', null, 'CREATE ', h('b', null, String(cre))));
         statHost.appendChild(h('span', null, '★ ', h('b', null, String(all.filter(function (p) { return p.favorite; }).length))));
         statHost.appendChild(h('span', null, 'STORAGE ', h('b', null, hl.label + (PZ.projects.persisted ? ' · 保護済み' : ''))));
       }
@@ -160,7 +162,7 @@
         if (st.collection && p.collections.indexOf(st.collection) < 0) return false;
         if (st.tags.length && !st.tags.every(function (t) { return p.tags.indexOf(t) >= 0; })) return false;
         if (st.q) {
-          var tool = p.kind === 'experiment' ? ((PZ.registry.get(p.tool) || {}).name || p.tool) : 'studio';
+          var tool = p.kind === 'experiment' ? ((PZ.registry.get(p.tool) || {}).name || p.tool) : (p.kind === 'creation' ? 'create 自作ツール ブロック ' + (p.creation.description || '') : 'studio');
           var hay = (p.name + ' ' + p.tags.join(' ') + ' ' + tool + ' ' + p.collections.map(colName).join(' ')).toLowerCase();
           return st.q.split(/\s+/).every(function (w) { return hay.indexOf(w) >= 0; });
         }
@@ -171,7 +173,7 @@
       function card(p, opts) {
         opts = opts || {};
         var thumb = h('div', { class: 'work-thumb checker' });
-        thumb.appendChild(h('span', { class: 'badge' + (p.kind === 'experiment' ? ' purple' : '') }, PZ.workKit.kindLabel(p)));
+        thumb.appendChild(h('span', { class: 'badge' + (p.kind === 'experiment' ? ' purple' : (p.kind === 'creation' ? ' pink' : '')) }, PZ.workKit.kindLabel(p)));
         var content = h('div', { class: 'work-thumb-inner' });
         thumb.appendChild(content);
         var fav = h('button', { type: 'button', class: 'fav-btn on-thumb', 'aria-pressed': String(p.favorite), title: p.favorite ? 'お気に入りから外す' : 'お気に入りに追加', 'aria-label': '「' + p.name + '」' + (p.favorite ? 'をお気に入りから外す' : 'をお気に入りに追加'), onclick: function (e) {
@@ -181,9 +183,10 @@
           return h('button', { type: 'button', class: 'tag-pill', title: '#' + t + ' で絞り込む', onclick: function () { if (st.tags.indexOf(t) < 0) st.tags.push(t); st.shown = PAGE; renderTags(); renderList(); } }, '#' + t);
         }));
         if (p.tags.length > 3) tags.appendChild(h('span', { class: 'tag-more' }, '+' + (p.tags.length - 3)));
-        var meta2 = p.kind === 'experiment'
-          ? (PZ.registry.get(p.tool) ? PZ.registry.get(p.tool).name : p.tool) + (p.parentId ? ' · 派生' : '')
-          : p.objects.length + ' オブジェクト' + (p.parentId ? ' · 派生' : '');
+        var meta2;
+        if (p.kind === 'creation') { var cs = PZ.creation.stats(p.creation); meta2 = cs.scripts + ' スクリプト · ' + cs.blocks + ' ブロック' + (p.parentId ? ' · 派生' : ''); }
+        else if (p.kind === 'experiment') meta2 = (PZ.registry.get(p.tool) ? PZ.registry.get(p.tool).name : p.tool) + (p.parentId ? ' · 派生' : '');
+        else meta2 = p.objects.length + ' オブジェクト' + (p.parentId ? ' · 派生' : '');
         var el = h('article', { class: 'card hoverable work-card' },
           h('div', { class: 'work-wrap' },
             h('a', { class: 'work-open', href: Router.href(PZ.projects.hrefFor(p)), 'aria-label': '「' + p.name + '」を開いて編集' },
@@ -197,6 +200,7 @@
           opts.compact ? null : h('div', { class: 'work-actions' },
             UI.iconButton('eye', 'プレビュー', function () { preview(p); }),
             UI.iconButton('edit', '開いて編集', function () { Router.go(PZ.projects.hrefFor(p)); }),
+            p.kind === 'creation' ? UI.iconButton('branch', 'Remixで開く（派生して改造）', function () { Router.go('/remix?from=' + encodeURIComponent(p.id)); }) : null,
             UI.iconButton('copy', '複製', function () { dup(p); }),
             UI.iconButton('tag', 'タグを編集', function () { editTags(p); }),
             UI.iconButton('folder', 'コレクションに入れる', function () { editCollections(p); }),
@@ -209,9 +213,10 @@
       function renderList() {
         U.clear(listHost); U.clear(recentHost);
         if (!all.length) {
-          listHost.appendChild(UI.emptyState('まだ作品がありません', 'Studioで最初の1枚を作るか、Labの実験を保存するか、バックアップファイルを読み込んでください。',
+          listHost.appendChild(UI.emptyState('まだ作品がありません', 'Studioで最初の1枚を作るか、Labの実験・Createの自作ツールを保存するか、バックアップファイルを読み込んでください。',
             [UI.button('新しく作る', { icon: 'plus', kind: 'primary', onclick: function () { Router.go('/studio/new'); } }),
-              UI.button('Labで遊ぶ', { icon: 'lab', kind: 'ghost', onclick: function () { Router.go('/lab'); } })]));
+              UI.button('Labで遊ぶ', { icon: 'lab', kind: 'ghost', onclick: function () { Router.go('/lab'); } }),
+              UI.button('ブロックで作る', { icon: 'blocks', kind: 'ghost', onclick: function () { Router.go('/create'); } })]));
           return;
         }
         var sort = SORTS.filter(function (s) { return s.id === st.sort; })[0];
@@ -382,6 +387,13 @@
 
       /* ---- プレビュー ---- */
       function imageBlob(p) {
+        if (p.kind === 'creation') {
+          return new Promise(function (resolve, reject) {
+            var c = document.createElement('canvas');
+            try { PZ.creation.renderToCanvas(p.creation, c, { frames: 45, scale: 2 }); } catch (e) { reject(e); return; }
+            c.toBlob(function (b) { b ? resolve(b) : reject(new Error('画像を作れませんでした')); }, 'image/png');
+          });
+        }
         if (p.kind === 'experiment') {
           var lab = PZ.labs[p.tool];
           if (!lab || !lab.render) return Promise.reject(new Error('この実験の画像を再生成できません'));
@@ -398,10 +410,13 @@
         var stageEl = h('div', { class: 'preview-stage checker' });
         var m;
         var tool = p.kind === 'experiment' ? PZ.registry.get(p.tool) : null;
+        var cst = p.kind === 'creation' ? PZ.creation.stats(p.creation) : null;
         var side = h('div', { class: 'preview-side' },
           h('h2', null, p.name),
+          p.kind === 'creation' && p.creation.description ? h('p', { class: 'muted', style: { fontSize: '13px' } }, p.creation.description) : null,
           h('dl', { class: 'dl' },
-            h('dt', null, '種類'), h('dd', null, p.kind === 'experiment' ? (tool ? tool.name : p.tool) : 'Studio'),
+            h('dt', null, '種類'), h('dd', null, p.kind === 'creation' ? 'Create（自作ツール）' : (p.kind === 'experiment' ? (tool ? tool.name : p.tool) : 'Studio')),
+            cst ? [h('dt', null, '構成'), h('dd', null, cst.scripts + ' スクリプト / ' + cst.blocks + ' ブロック / へんすう ' + cst.vars)] : null,
             h('dt', null, '更新'), h('dd', null, U.fmtDate(p.updatedAt)),
             h('dt', null, '作成'), h('dd', null, U.fmtDate(p.createdAt)),
             h('dt', null, '最終'), h('dd', null, p.lastOpenedAt ? U.fmtDate(p.lastOpenedAt) : '—'),
@@ -410,17 +425,24 @@
             p.collections.length ? [h('dt', null, '集まり'), h('dd', null, p.collections.map(colName).filter(Boolean).join(' / '))] : null,
             p.daily ? [h('dt', null, 'お題'), h('dd', null, p.daily)] : null),
           UI.button('開いて編集', { icon: 'edit', kind: 'primary', onclick: function () { m.close(); Router.go(PZ.projects.hrefFor(p)); } }),
+          p.kind === 'creation' ? UI.button('Remixで開く', { icon: 'branch', kind: 'ghost', onclick: function () { m.close(); Router.go('/remix?from=' + encodeURIComponent(p.id)); } }) : null,
           h('div', { class: 'preview-export' },
             h('span', { class: 'field-label' }, '書き出し'),
             UI.button('画像 (PNG)', { icon: 'image', kind: 'ghost', small: true, title: '見た目だけの画像。再編集はできません', onclick: function () {
               imageBlob(p).then(function (b) { U.download(b, U.safeFileName(p.name, '.png')); UI.toast('画像（PNG）を保存しました', { type: 'ok', duration: 1600 }); })
                 .catch(function (e) { UI.toast('画像を保存できませんでした: ' + (e && e.message), { type: 'error' }); });
             } }),
+            p.kind === 'creation' ? UI.button('自作ツール (JSON)', { icon: 'download', kind: 'ghost', small: true, title: '他の人に渡せる自作ツールファイル。読み込み前に内容が検証されます', onclick: function () { exportTool(p); } }) : null,
             UI.button('データ (JSON)', { icon: 'download', kind: 'ghost', small: true, title: '再編集できるプロジェクトデータ。別の環境でも読み込めます', onclick: function () { exportOne(p); } })),
           UI.button('閉じる', { kind: 'ghost', onclick: function () { m.close(); } }));
         m = UI.openModal({ className: 'wide', label: p.name + ' のプレビュー', content: h('div', { class: 'preview-modal' }, stageEl, side) });
         requestAnimationFrame(function () {
-          if (p.kind === 'experiment') {
+          if (p.kind === 'creation') {
+            var cc = h('canvas', { 'aria-label': p.name + ' のプレビュー', role: 'img', style: { maxWidth: '100%' } });
+            stageEl.appendChild(cc);
+            try { PZ.creation.renderToCanvas(p.creation, cc, { frames: 45, scale: 1 }); cc.style.width = Math.max(240, Math.min(stageEl.clientWidth - 48, 720)) + 'px'; cc.style.height = 'auto'; }
+            catch (e) { stageEl.appendChild(h('p', { class: 'muted' }, 'プレビューを描画できませんでした')); }
+          } else if (p.kind === 'experiment') {
             var lab = PZ.labs[p.tool];
             var w = Math.max(240, Math.min(stageEl.clientWidth - 48, 720));
             var cv = h('canvas', { 'aria-label': p.name + ' のプレビュー', role: 'img' });
@@ -455,6 +477,10 @@
           });
         }).catch(function (e) { UI.toast('バックアップに失敗しました: ' + (e && e.message), { type: 'error' }); });
       }
+      function exportTool(p) {
+        download(PZ.creation.toFile(p), U.safeFileName(p.name, '') + '-' + stamp() + '.pzcreate.json');
+        UI.toast('「' + p.name + '」を自作ツールファイルとして書き出しました', { type: 'ok' });
+      }
       function exportOne(p) {
         PZ.projects.exportAll([p.id]).then(function (data) {
           download(data, U.safeFileName(p.name, '') + '-' + stamp() + '.pz.json');
@@ -470,6 +496,11 @@
           var data;
           try { data = JSON.parse(String(reader.result)); }
           catch (e) { UI.toast('JSONとして読み込めませんでした。PLAYGROUND ZERO のプロジェクトデータ（.json）を選んでください。', { type: 'error', duration: 6500 }); return; }
+          if (PZ.creation.isToolFile(data)) {
+            // 自作ツールファイル: 検証 → 確認画面 → 新しい作品として保存（既存は上書きしない）
+            PZ.creationUI.importToolFile(data, f.name, f.size, { mode: 'save', onSaved: function () { load(); } });
+            return;
+          }
           PZ.projects.inspectBackup(data).then(function (report) {
             if (!report.ok) { UI.toast(report.error, { type: 'error', duration: 7000 }); return; }
             confirmImport(report, f.name);
@@ -488,7 +519,7 @@
         var m;
         var rows = report.items.slice(0, 8).map(function (it) {
           var label = it.status === 'new' ? '新規' : it.status === 'copy' ? '別作品として追加' : '同じ内容（スキップ）';
-          return h('li', null, h('span', { class: 'imp-name' }, (it.project.kind === 'experiment' ? '◇ ' : '▣ ') + it.project.name),
+          return h('li', null, h('span', { class: 'imp-name' }, (it.project.kind === 'creation' ? '▤ ' : (it.project.kind === 'experiment' ? '◇ ' : '▣ ')) + it.project.name),
             h('span', { class: 'badge' + (it.status === 'same' ? ' purple' : '') }, label));
         });
         var okBtn = UI.button(importable || extraCount ? '取り込む' : '取り込む内容がありません', { kind: 'primary', disabled: !(importable || extraCount), onclick: function () {
@@ -515,6 +546,7 @@
             report.invalid ? [h('dt', null, '無効'), h('dd', null, report.invalid + ' 件（壊れているため取り込みません）')] : null,
             report.truncated ? [h('dt', null, '省略'), h('dd', null, report.truncated + ' 件（1回に取り込める上限を超えています）')] : null,
             extraCount ? [h('dt', null, 'その他'), h('dd', null, 'コレクション ' + ex.collections.length + ' / 完了記録 ' + Object.keys(ex.daily).length + ' / お気に入り実験 ' + ex.favTools.length)] : null),
+          report.remix && (report.remix.components.length || Object.keys(report.remix.histories).length) ? h('p', { class: 'modal-sub' }, 'Remix のデータ: 部品 ' + report.remix.components.length + ' 個 / 変更履歴 ' + Object.keys(report.remix.histories).length + ' 作品分'+ (report.remix.invalid ? '（' + report.remix.invalid + ' 件は壊れているため無視）' : '') + ' も一緒に取り込みます。') : null,
           rows.length ? h('ul', { class: 'import-list' }, rows, report.items.length > 8 ? h('li', { class: 'muted' }, '…ほか ' + (report.items.length - 8) + ' 件') : null) : null,
           h('p', { class: 'modal-sub' }, '今ある作品は上書きされません。取り込みはこの確認のあとにだけ実行されます。'),
           h('div', { class: 'modal-actions' }, UI.button('キャンセル', { kind: 'ghost', onclick: function () { m.close(); } }), okBtn));

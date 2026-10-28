@@ -9,8 +9,8 @@
   var C = PZ.config;
   var M = (PZ.model = {});
 
-  M.SCHEMA = 2; // 2: kind/tool/params/tags/favorite/collections/parentId/daily/thumb を追加（1 のデータはそのまま読める）
-  M.KINDS = ['studio', 'experiment'];
+  M.SCHEMA = 3; // 3: kind:'creation'（creation フィールド）を追加 / 2: kind/tool/params/tags/favorite/collections/parentId/daily/thumb を追加（1・2 のデータはそのまま読める）
+  M.KINDS = ['studio', 'experiment', 'creation'];
   M.TYPES = ['rect', 'ellipse', 'triangle', 'star', 'text'];
   M.TYPE_LABEL = { rect: '四角', ellipse: '円', triangle: '三角', star: '星', text: 'テキスト' };
   M.ACCENTS = ['#b8ff3d', '#a066ff', '#f2f4f8', '#ff5d9e', '#3de0ff', '#ffb13d'];
@@ -134,6 +134,7 @@
       updatedAt: now,
       lastOpenedAt: null,
       kind: 'studio',
+      creation: null,
       tool: '',
       params: null,
       tags: [],
@@ -162,6 +163,25 @@
       tags: opts.tags || [],
       parentId: opts.parentId || null,
       daily: opts.daily || null,
+      collections: opts.collections || [],
+      thumb: opts.thumb || null,
+      createdAt: now,
+      updatedAt: now,
+      lastOpenedAt: now
+    });
+  };
+
+  /** 自作ツール（Creation Engine）を作品として作る */
+  M.createCreationWork = function (opts) {
+    opts = opts || {};
+    var now = Date.now();
+    return M.sanitizeProject({
+      id: U.uid(),
+      kind: 'creation',
+      name: opts.name || '無題の自作ツール',
+      creation: opts.creation || PZ.creation.blank(),
+      tags: opts.tags || [],
+      parentId: opts.parentId || null,
       collections: opts.collections || [],
       thumb: opts.thumb || null,
       createdAt: now,
@@ -229,6 +249,7 @@
     c.lastOpenedAt = null;
     c.favorite = false;
     c.parentId = project.id; // 元の作品は変更せず、派生元として記録する
+    if (project.kind === 'creation' && PZ.remix && PZ.remix.remixForCopy) c.remix = PZ.remix.remixForCopy(project); // 系統ツリー用
     c.objects.forEach(function (o) { o.id = U.oid(); });
     return c;
   };
@@ -236,8 +257,15 @@
   /** 外部/保存データを検証して安全な作品へ。壊れていれば null */
   M.sanitizeProject = function (raw) {
     if (!raw || typeof raw !== 'object') return null;
-    var kind = raw.kind === 'experiment' ? 'experiment' : 'studio';
+    var kind = raw.kind === 'experiment' ? 'experiment' : (raw.kind === 'creation' ? 'creation' : 'studio');
     if (kind === 'studio' && !Array.isArray(raw.objects)) return null;
+    var creation = null;
+    if (kind === 'creation') {
+      // 自作ツール（ブロック構成）。形が壊れていれば作品ごと無効。読める範囲は残す（lenient）
+      if (!raw.creation || typeof raw.creation !== 'object' || Array.isArray(raw.creation) || !PZ.creation) return null;
+      creation = PZ.creation.sanitize(raw.creation);
+      try { if (JSON.stringify(creation).length > C.limits.creationBytes) return null; } catch (e) { return null; }
+    }
     if (!Array.isArray(raw.objects)) raw = Object.assign({}, raw, { objects: [] });
     if (raw.schema !== undefined && U.num(raw.schema, 1) > M.SCHEMA) {
       // 将来のバージョンのデータ。読める範囲で読み込む（不明な型は捨てる）
@@ -248,18 +276,21 @@
       var o = M.sanitizeObject(raw.objects[i]);
       if (o) objects.push(o);
     }
-    return {
+    // Remix の派生情報（任意）。Remix が読み込まれていない環境では、従来どおり無視する
+    var remix = kind === 'creation' && PZ.remix && PZ.remix.cleanRemix ? PZ.remix.cleanRemix(raw.remix) : null;
+    var out = {
       id: typeof raw.id === 'string' && raw.id ? raw.id.slice(0, 60) : U.uid(),
       schema: M.SCHEMA,
       name: String(raw.name === undefined || raw.name === '' ? '無題の作品' : raw.name).slice(0, C.limits.projectNameLength),
-      width: numIn(raw.width, 200, 4000, C.canvas.width),
-      height: numIn(raw.height, 200, 4000, C.canvas.height),
-      background: U.normHex(raw.background, C.canvas.background),
+      width: creation ? creation.canvas.w : numIn(raw.width, 200, 4000, C.canvas.width),
+      height: creation ? creation.canvas.h : numIn(raw.height, 200, 4000, C.canvas.height),
+      background: creation ? creation.canvas.bg : U.normHex(raw.background, C.canvas.background),
       objects: objects,
       createdAt: numIn(raw.createdAt, 0, 4e12, now),
       updatedAt: numIn(raw.updatedAt, 0, 4e12, now),
       lastOpenedAt: raw.lastOpenedAt === null || raw.lastOpenedAt === undefined ? null : numIn(raw.lastOpenedAt, 0, 4e12, now),
       kind: kind,
+      creation: creation,
       tool: kind === 'experiment' ? String(raw.tool || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 24) : '',
       params: kind === 'experiment' ? cleanParamsTop(raw.params) : null,
       tags: M.cleanTags(raw.tags),
@@ -269,6 +300,8 @@
       daily: M.isDateKey(raw.daily) ? raw.daily : null,
       thumb: cleanThumb(raw.thumb)
     };
+    if (remix) out.remix = remix;
+    return out;
   };
 
   /* ---------- 履歴スナップショット ---------- */

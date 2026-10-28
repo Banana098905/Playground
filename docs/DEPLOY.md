@@ -63,4 +63,4 @@ PLAYGROUND ZERO は静的ファイルだけで動くため、ビルド設定な�
 
 ## キャッシュについて
 
-`index.html` は JS/CSS を `?v=2.0.0` 付きで読み込みます。更新を出すときは `index.html` 内の `v=` と `js/config.js` の `version` を同時に上げると、利用者のブラウザが確実に新しいファイルを取得します。
+`index.html` は JS/CSS を `?v=4.0.0` 付きで読み込みます。更新を出すときは `index.html` 内の `v=` と `js/config.js` の `version` を同時に上げると、利用者のブラウザが確実に新しいファイルを取得します。

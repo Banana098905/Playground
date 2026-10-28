@@ -205,7 +205,8 @@
             h('p', { class: 'hero-lead' }, 'ブラウザだけで、創作と実験を。図形とテキストで作品をつくり、流れ・配色・模様・動きの実験室で遊び、毎日のお題に挑戦する。気に入った設定は保存して、いつでも再編集。登録もインストールも要りません。'),
             h('div', { class: 'hero-cta' },
               UI.button('新しく作る', { kind: 'primary', icon: 'plus', class: 'btn-lg btn-cut', onclick: function () { R.go('/studio/new'); } }),
-              UI.button('実験を始める', { kind: 'ghost', icon: 'lab', class: 'btn-lg btn-cut', onclick: function () { R.go('/lab'); } })))),
+              UI.button('実験を始める', { kind: 'ghost', icon: 'lab', class: 'btn-lg btn-cut', onclick: function () { R.go('/lab'); } }),
+              UI.button('ブロックで作る', { kind: 'purple', icon: 'blocks', class: 'btn-lg btn-cut', onclick: function () { R.go('/create'); } })))),
         readout);
       root.appendChild(hero);
       fxList.push(createHeroFx(heroCanvas, hero));
@@ -352,7 +353,9 @@
             mapLink('C-02', 'lab', 'Lab', '6つの実験を探して起動する実験ライブラリ。', '/lab'),
             mapLink('D-03', 'spark', 'Discover', '予想外の配色・模様・お題に出会うランダム発見。', '/discover'),
             mapLink('E-04', 'calendar', 'Daily', '毎日変わるお題と、挑戦の記録。', '/daily'),
-            mapLink('F-05', 'space', 'My Space', '保存した作品の検索・整理・バックアップ。', '/space')))));
+            mapLink('F-05', 'space', 'My Space', '保存した作品の検索・整理・バックアップ。', '/space'),
+            mapLink('G-06', 'blocks', 'Create', 'ブロックを組み合わせて、自分だけの実験を作る。ファイルで人に渡せる。', '/create'),
+            mapLink('H-07', 'branch', 'Remix', '作品を派生させて改造。差分・履歴・部品・組み合わせ。', '/remix')))));
 
       /* --- アニメーションループ（非表示時は停止） --- */
       var reduced = U.prefersReducedMotion();

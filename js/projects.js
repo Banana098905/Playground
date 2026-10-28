@@ -67,6 +67,7 @@
 
   /** 作品を開くURL（種類に応じて Studio か各実験ツールへ） */
   P.hrefFor = function (p) {
+    if (p.kind === 'creation') return '/create?work=' + encodeURIComponent(p.id);
     if (p.kind === 'experiment') {
       var t = PZ.registry && PZ.registry.get(p.tool);
       return (t ? t.path : '/lab') + '?work=' + encodeURIComponent(p.id);
@@ -98,6 +99,13 @@
   /** 実験の設定を作品として保存する（opts: name, params, thumb, parentId, daily, tags） */
   P.createExperiment = function (tool, opts) {
     var p = M.createExperimentWork(tool, opts);
+    return P.save(p, false);
+  };
+
+  /** 自作ツールを新しい作品として保存する（opts: name, creation, thumb, parentId, tags） */
+  P.createCreation = function (opts) {
+    var p = M.createCreationWork(opts);
+    if (!p) return Promise.reject(new Error('作品として保存できる形ではありません（大きすぎるか、壊れています）'));
     return P.save(p, false);
   };
 
@@ -195,7 +203,12 @@
       };
       out.collections = only ? extras.collections.filter(function (c) { return used[c.id]; }) : extras.collections;
       if (!only) { out.daily = extras.daily; out.favTools = extras.favTools; }
-      return out;
+      // Remix の変更履歴・部品（任意の追加項目。format は変えないので、古いアプリでも作品は読める）
+      if (!(PZ.remix && PZ.remix.backup)) return out;
+      return PZ.remix.backup.export(projects.map(function (p) { return p.id; }), !only).then(function (rx) {
+        if (rx) out.remix = rx;
+        return out;
+      }, function () { return out; });
     });
   };
   P.markBackedUp = function () { return repo.setMeta('lastBackupAt', Date.now()); };
@@ -226,7 +239,8 @@
       appVersion: typeof data.appVersion === 'string' ? data.appVersion.slice(0, 20) : '',
       exportedAt: typeof data.exportedAt === 'string' ? data.exportedAt.slice(0, 40) : '',
       items: [], invalid: 0, truncated: Math.max(0, data.projects.length - raws.length),
-      extras: PZ.userdata.inspectExtras(data)
+      extras: PZ.userdata.inspectExtras(data),
+      remix: PZ.remix && PZ.remix.backup ? PZ.remix.backup.inspect(data.remix) : null
     };
     var seen = {};
     var chain = Promise.resolve();
@@ -250,6 +264,7 @@
   /** 検証済みの内容を保存する。既存の作品は決して上書きしない（衝突は別IDの別作品にする） */
   P.applyBackup = function (report) {
     var result = { added: 0, copies: 0, skipped: 0, invalid: report.invalid, failed: 0, error: '', extras: { collections: 0, daily: 0, favTools: 0 } };
+    var idMap = {}; // バックアップ内のID → 保存したID（Remix の履歴を結びつける）
     var chain = PZ.userdata.mergeExtras(report.extras).then(function (added) { result.extras = added; return PZ.userdata.collections(); })
       .then(function (cols) {
         var known = {};
@@ -259,6 +274,7 @@
           if (it.status === 'same') { result.skipped++; return; }
           inner = inner.then(function () {
             var p = it.project;
+            var oldId = p.id;
             p.collections = p.collections.filter(function (c) { return known[c]; });
             if (it.status === 'copy') {
               p.parentId = p.parentId || p.id;
@@ -267,6 +283,7 @@
             }
             return repo.put(p).then(function () {
               result.added++;
+              idMap[oldId] = p.id;
               if (it.status === 'copy') result.copies++;
             }, function (e) {
               result.failed++;
@@ -276,7 +293,10 @@
         });
         return inner;
       });
-    return chain.then(function () { return result; });
+    return chain.then(function () {
+      if (!(PZ.remix && PZ.remix.backup && report.remix)) return result;
+      return PZ.remix.backup.apply(report.remix, idMap).then(function (r) { result.remix = r; return result; }, function () { return result; });
+    });
   };
 
   /** 検証→取り込みを一度に行う（確認画面を挟まない内部用・テスト用） */

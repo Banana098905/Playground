@@ -51,6 +51,19 @@
 
 > **Phase 3 の制限（未実装）**: 自作関数（ブロックのまとめ）、リスト／配列、音、画像の読み込み、複数キーの入力（キーボードイベント）は未実装です。ブロックの並べ替えのキーボード操作は Alt+↑↓ とボタンで、ドロップ先の自由な位置指定はドラッグ操作のみです。
 
+### Phase 4（Remix Engine / Remix）
+
+| ページ | できること |
+|---|---|
+| **Remix** | 自作ツールを開いて**元を残したまま派生**（または直接編集）。ブロックの追加・削除・複製・移動・つなぎ替え、条件・へんすう・数・色・つまみの編集、リアルタイムプレビュー（実行／停止／リセット）。ドラッグ・クリック・キーボードに対応 |
+| **差分と比較** | 変更前との差分（追加／削除／変更／接続変更）をハイライト。変更前と変更後を**同じ条件で並べて同時に動かして**比較。保存前に変更内容を確認 |
+| **派生と系統** | 派生元・派生の系統ツリー。元を後で変えても派生は変わらず、元を削除しても派生は壊れない（「削除済み」として表示）。派生の派生も可 |
+| **変更履歴** | 保存ごとに版を記録（変更概要つき）。過去の版と比較、**別の作品として復元**。自動保存（下書き）と保存は別。件数・容量に上限 |
+| **部品と組み合わせ** | 再利用部品（入力・出力・設定値・バージョン）。付属 7 種＋自分の部品。変数名の衝突は自動で別名に。ほかの作品のスクリプトを取り込み、不足や非互換は理由と直し方を表示 |
+| **書き出し／読み込み** | `.pzremix.json`（作品・派生元・履歴・部品・依存関係）。検証→確認→取り込み。常に新しい作品として追加し、コードは実行しない。バックアップにも履歴・部品を含められる |
+
+使い方・データ形式・制限は [`docs/REMIX-ENGINE.md`](docs/REMIX-ENGINE.md)。Phase 1〜3 の作品・バックアップ・`.pzcreate.json` はそのまま使えます（データ移行不要）。My Space の作品カードと Create から「Remixで開く」で入れます。
+
 ## 起動
 
 どれでも動きます。
@@ -111,7 +124,9 @@ playground-zero/
 │  ├─ registry.js        実験の一覧データ（名前・ジャンル・タグ・使い方）
 │  ├─ labs-core.js       DOM非依存の生成ロジック（flow / color / pattern / motion）
 │  ├─ daily.js           30種のお題と日付からの決定ロジック
-│  ├─ pages/             home / studio / library / lab-* / daily / discover / myspace / workkit
+│  ├─ creation/          Creation Engine（ブロック仕様・検証・インタープリター・サンプル・入出力）
+│  ├─ remix/             Remix Engine（差分・系統・履歴・部品・書き出し。UI非依存）
+│  ├─ pages/             home / studio / library / lab-* / daily / discover / myspace / workkit / create* / remix*
 │  └─ main.js            起動
 ├─ scripts/              serve / build / test-logic / check-links
 ├─ docs/                 DEPLOY.md / ARCHITECTURE.md / ROADMAP.md
@@ -126,12 +141,12 @@ playground-zero/
 ## テスト
 
 ```bash
-npm test      # 構文・参照ファイルの確認 + 中核ロジックのテスト（依存なし・12項目）
+npm test      # 構文・参照ファイル + 中核ロジック(12) + Creation Engine(24) + Remix Engine(19)（依存なし）
 ```
 
 ## 今後の拡張
 
-[`docs/ROADMAP.md`](docs/ROADMAP.md) を参照（Phase 3 の改善案を掲載）。
+[`docs/ROADMAP.md`](docs/ROADMAP.md) を参照（Phase 5 の改善案を掲載）。
 
 ## ライセンス
 

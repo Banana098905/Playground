@@ -25,6 +25,8 @@
   var NAV = [
     { id: 'home', label: 'Home', icon: 'home', path: '/' },
     { id: 'studio', label: 'Studio', icon: 'studio', path: '/studio/new' },
+    { id: 'create', label: 'Create', icon: 'blocks', path: '/create' },
+    { id: 'remix', label: 'Remix', icon: 'branch', path: '/remix' },
     { id: 'lab', label: 'Lab', icon: 'lab', path: '/lab' },
     { id: 'discover', label: 'Discover', icon: 'spark', path: '/discover' },
     { id: 'daily', label: 'Daily', icon: 'calendar', path: '/daily' },
@@ -66,6 +68,8 @@
     footer.appendChild(h('span', { class: 'footer-links' },
       h('a', { href: PZ.router.href('/') }, 'Home'),
       h('a', { href: PZ.router.href('/studio/new') }, 'Studio'),
+      h('a', { href: PZ.router.href('/create') }, 'Create'),
+      h('a', { href: PZ.router.href('/remix') }, 'Remix'),
       h('a', { href: PZ.router.href('/lab') }, 'Lab'),
       h('a', { href: PZ.router.href('/discover') }, 'Discover'),
       h('a', { href: PZ.router.href('/daily') }, 'Daily'),
@@ -88,6 +92,8 @@
     R.add('/studio', PZ.pages.studio);
     R.add('/studio/new', PZ.pages.studio);
     R.add('/studio/:id', PZ.pages.studio);
+    R.add('/create', PZ.pages.create);
+    R.add('/remix', PZ.pages.remix);
     R.add('/lab', PZ.pages.lab);
     R.add('/lab/particles', PZ.pages.particles);
     R.add('/lab/shapes', PZ.pages.shapes);
